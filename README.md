@@ -1,25 +1,24 @@
-# Task Manager — Full-Stack Bug Fix Challenge
+# Task Manager (Bug Fix Challenge)
 
-A simple, minimal Task Manager application built with React (Vite) and Node.js (Express). Designed as a practical 24-hour internship debugging assessment for a final-year B.Tech CSE student.
-
----
-
-## Project Overview
-
-The application provides simple task management functionality:
-* View all tasks
-* Create a new task
-* Toggle task completion status
-* Delete a task
-* Filter tasks (All / Pending / Completed)
-* View task statistics (Total, Pending, Completed)
+A lightweight, full-stack Task Manager application built with **React** and **Node.js/Express**.
 
 ---
 
-## Technology Stack
+## Features
 
-* **Frontend:** React 18, Vite, JavaScript (ES6+), Vanilla CSS, Native Fetch API
-* **Backend:** Node.js, Express.js, CORS, In-Memory Array Data Store
+- View all tasks
+- Create a new task
+- Mark tasks as completed / pending
+- Delete a task
+- Filter tasks by status (`All`, `Pending`, `Completed`)
+- Real-time task statistics (Total, Pending, Completed counts)
+
+---
+
+## Tech Stack
+
+- **Frontend:** React 18, Vite, Vanilla CSS, Native Fetch API
+- **Backend:** Node.js, Express.js, CORS (In-memory storage)
 
 ---
 
@@ -54,37 +53,37 @@ bug-fix-challenge/
 
 ---
 
-## Getting Started
+## Quick Start
 
-### 1. Backend Setup
+### 1. Run Backend
 ```bash
 cd backend
 npm install
 npm run dev
 ```
-*Backend runs on `http://localhost:5000`*
+Server runs on `http://localhost:5000`.
 
-### 2. Frontend Setup (in a separate terminal)
+### 2. Run Frontend (New Terminal)
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-*Frontend runs on `http://localhost:3000`*
+Application opens on `http://localhost:3000`.
 
 ---
 
-## API Endpoints
+## API Documentation
 
-| Method | Endpoint | Description | Request Body | Status Code |
+| Method | Endpoint | Description | Request Payload | Response Status |
 |---|---|---|---|---|
-| `GET` | `/api/tasks` | Fetch all tasks | None | `200 OK` |
-| `POST` | `/api/tasks` | Create a task | `{ "title": "string" }` | `201 Created` |
-| `PUT` | `/api/tasks/:id` | Update completion | `{ "completed": boolean }` | `200 OK` |
-| `DELETE` | `/api/tasks/:id` | Delete task | None | `200 OK` |
+| `GET` | `/api/tasks` | Get all tasks | — | `200 OK` |
+| `POST` | `/api/tasks` | Add a new task | `{ "title": "Task title" }` | `201 Created` |
+| `PUT` | `/api/tasks/:id` | Update completion | `{ "completed": true }` | `200 OK` |
+| `DELETE` | `/api/tasks/:id` | Remove a task | — | `200 OK` |
 
 ---
 
-## Debugging Challenge Documentation
+## Bug Fix Report
 
-Refer to [`BUG_REPORT.md`](./BUG_REPORT.md) for detailed descriptions, root cause analysis, code fixes, and testing verification for all 10 bugs.
+All 10 identified bugs, root causes, code fixes, and testing steps are documented in [`BUG_REPORT.md`](./BUG_REPORT.md).
