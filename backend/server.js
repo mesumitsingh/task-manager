@@ -16,12 +16,12 @@ let tasks = [
 
 let nextId = 4;
 
-// 1. GET /api/tasks - Retrieve all tasks
+// GET /api/tasks - Retrieve all tasks
 app.get('/api/tasks', (req, res) => {
   res.status(200).json(tasks);
 });
 
-// 2. POST /api/tasks - Create a new task (Fixed validation)
+// POST /api/tasks - Create a new task
 app.post('/api/tasks', (req, res) => {
   if (!req.body || !req.body.title || typeof req.body.title !== 'string' || !req.body.title.trim()) {
     return res.status(400).json({ message: 'Title is required' });
@@ -38,7 +38,7 @@ app.post('/api/tasks', (req, res) => {
   res.status(201).json(newTask);
 });
 
-// 3. PUT /api/tasks/:id - Update task completion status (Fixed property check)
+// PUT /api/tasks/:id - Update task completion status
 app.put('/api/tasks/:id', (req, res) => {
   const taskId = parseInt(req.params.id, 10);
   const task = tasks.find((t) => t.id === taskId);
@@ -54,7 +54,7 @@ app.put('/api/tasks/:id', (req, res) => {
   res.status(200).json(task);
 });
 
-// 4. DELETE /api/tasks/:id - Delete a task (Fixed 404 status code)
+// DELETE /api/tasks/:id - Delete a task
 app.delete('/api/tasks/:id', (req, res) => {
   const taskId = parseInt(req.params.id, 10);
   const taskIndex = tasks.findIndex((t) => t.id === taskId);

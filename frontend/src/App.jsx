@@ -24,7 +24,6 @@ export default function App() {
     }
   };
 
-  // Fixed: Append new task instead of overwriting list
   const handleAddTask = async (title) => {
     try {
       setError(null);
@@ -55,7 +54,6 @@ export default function App() {
     }
   };
 
-  // Fixed: Proper filter logic
   const filteredTasks = tasks.filter((task) => {
     if (filter === 'completed') return task.completed;
     if (filter === 'pending') return !task.completed;
