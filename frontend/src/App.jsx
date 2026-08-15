@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import TaskForm from './components/TaskForm';
-import TaskList from './components/TaskList';
-import TaskFilter from './components/TaskFilter';
+import TaskItem from './components/TaskItem';
 import TaskStats from './components/TaskStats';
 import { fetchTasks, createTask, updateTaskStatus, deleteTask } from './services/api';
 import './App.css';
@@ -25,11 +24,12 @@ export default function App() {
     }
   };
 
+  // Fixed: Append new task instead of overwriting list
   const handleAddTask = async (title) => {
     try {
       setError(null);
       const newTask = await createTask(title);
-      setTasks([newTask]);
+      setTasks((prevTasks) => [...prevTasks, newTask]);
     } catch (err) {
       setError(err.message);
     }
@@ -55,9 +55,10 @@ export default function App() {
     }
   };
 
+  // Fixed: Proper filter logic
   const filteredTasks = tasks.filter((task) => {
-    if (filter === 'completed') return !task.completed;
-    if (filter === 'pending') return task.completed;
+    if (filter === 'completed') return task.completed;
+    if (filter === 'pending') return !task.completed;
     return true;
   });
 
@@ -65,7 +66,7 @@ export default function App() {
     <div className="app-container">
       <div className="header">
         <h1>Task Manager</h1>
-        <p>Full-Stack Bug Fix Challenge</p>
+        <p>Simple Full-Stack Task Management Application</p>
       </div>
 
       {error && <div className="error-banner">{error}</div>}
@@ -74,13 +75,32 @@ export default function App() {
 
       <TaskStats tasks={tasks} />
 
-      <TaskFilter currentFilter={filter} onFilterChange={setFilter} />
+      <div className="task-filters">
+        {['all', 'pending', 'completed'].map((type) => (
+          <button
+            key={type}
+            className={`filter-btn ${filter === type ? 'active' : ''}`}
+            onClick={() => setFilter(type)}
+          >
+            {type.charAt(0).toUpperCase() + type.slice(1)}
+          </button>
+        ))}
+      </div>
 
-      <TaskList
-        tasks={filteredTasks}
-        onToggle={handleToggleTask}
-        onDelete={handleDeleteTask}
-      />
+      {filteredTasks.length === 0 ? (
+        <p className="empty-state">No tasks found.</p>
+      ) : (
+        <ul className="task-list">
+          {filteredTasks.map((task) => (
+            <TaskItem
+              key={task.id}
+              task={task}
+              onToggle={handleToggleTask}
+              onDelete={handleDeleteTask}
+            />
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function TaskItem({ task, index, onToggle, onDelete }) {
+export default function TaskItem({ task, onToggle, onDelete }) {
   return (
     <li className={`task-item ${task.completed ? 'completed' : ''}`}>
       <div className="task-content">
@@ -12,7 +12,7 @@ export default function TaskItem({ task, index, onToggle, onDelete }) {
         />
         <span className="task-title">{task.title}</span>
       </div>
-      <button className="delete-btn" onClick={() => onDelete(index)}>
+      <button className="delete-btn" onClick={() => onDelete(task.id)}>
         Delete
       </button>
     </li>

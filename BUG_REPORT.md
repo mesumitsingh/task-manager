@@ -1,116 +1,107 @@
 # Bug Fix Report
 
-This document details all 10 intentional bugs identified in the Task Manager application, their root causes, recommended fixes, affected files, and verification steps.
+This document details all 10 intentional bugs identified in the original Task Manager application, explaining the observed problem, root cause, the applied fix, files changed, and verification steps.
 
 ---
 
-## Bug #1: Missing `await` on `res.json()` in Initial Task Fetch
+## Bug #1: Missing `await` in Initial Task Fetch
 
 ### Problem
-When the application loads, tasks fail to display in the UI and the browser console throws a runtime error (e.g., `tasks.map is not a function` or tasks list is empty/broken).
+On initial page load, tasks fail to display in the UI and the browser console throws an error (`tasks.map is not a function` or unhandled promise).
 
 ### Root Cause
-In `frontend/src/services/api.js`, the `fetchTasks` function calls `const data = res.json();` without the `await` keyword. As a result, `data` is returned as an unresolved `Promise` instead of the parsed array of task objects.
+In `frontend/src/services/api.js`, `const data = res.json();` was called without `await`. It returned a pending `Promise` object instead of the parsed array of tasks.
 
 ### Fix
-Add `await` to `res.json()`:
+Added `await` before `res.json()`:
 ```javascript
 export async function fetchTasks() {
   const res = await fetch(`${API_URL}/api/tasks`);
-  if (!res.ok) {
-    throw new Error('Failed to fetch tasks');
-  }
-  const data = await res.json();
-  return data;
+  if (!res.ok) throw new Error('Failed to fetch tasks');
+  return await res.json();
 }
 ```
 
 ### Files Changed
-- `frontend/src/services/api.js`
+* `frontend/src/services/api.js`
 
 ### Testing
-1. Start both backend and frontend servers.
-2. Refresh `http://localhost:3000`.
-3. Verify that initial mock tasks load and render in the task list without console errors.
+1. Started backend and frontend.
+2. Loaded `http://localhost:3000`.
+3. Verified initial tasks display properly in the list with no console errors.
 
 ---
 
-## Bug #2: Incorrect API Endpoint in Task Deletion
+## Bug #2: Incorrect API Endpoint for Task Deletion
 
 ### Problem
-Clicking the "Delete" button on a task triggers an HTTP 404 error in the browser network tab, and the task is not deleted from the backend.
+Clicking "Delete" on any task returned a 404 Not Found error from the server, and the task remained in the database.
 
 ### Root Cause
-In `frontend/src/services/api.js`, the `deleteTask` function requests `${API_URL}/api/task/${id}` (singular `task`), whereas the backend Express router is registered at `/api/tasks` (plural `tasks`).
+In `frontend/src/services/api.js`, `deleteTask` sent requests to `/api/task/${id}` (singular `task`), whereas the backend route is defined at `/api/tasks/:id` (plural `tasks`).
 
 ### Fix
-Correct the endpoint URL to plural:
+Updated the endpoint URL to `/api/tasks/${id}`:
 ```javascript
 export async function deleteTask(id) {
   const res = await fetch(`${API_URL}/api/tasks/${id}`, {
     method: 'DELETE'
   });
-  if (!res.ok) {
-    throw new Error('Failed to delete task');
-  }
+  if (!res.ok) throw new Error('Failed to delete task');
   return await res.json();
 }
 ```
 
 ### Files Changed
-- `frontend/src/services/api.js`
+* `frontend/src/services/api.js`
 
 ### Testing
-1. Click the "Delete" button next to a task.
-2. Inspect the Network tab in DevTools to confirm the request goes to `DELETE http://localhost:5000/api/tasks/:id`.
+1. Clicked "Delete" on a task.
+2. Inspected Network tab in DevTools to confirm request is sent to `DELETE /api/tasks/:id` and returns 200 OK.
 
 ---
 
-## Bug #3: Incorrect HTTP Method in Task Completion Update
+## Bug #3: Incorrect HTTP Method in Task Status Update
 
 ### Problem
-Toggling a task's completion checkbox fails with an HTTP 404 or 405 error because the backend cannot match the endpoint method.
+Clicking the task completion checkbox triggered an error and failed to update the task status on the server.
 
 ### Root Cause
-In `frontend/src/services/api.js`, `updateTaskStatus` sends an HTTP `POST` request to `${API_URL}/api/tasks/${id}` instead of an HTTP `PUT` request as expected by the backend router.
+In `frontend/src/services/api.js`, `updateTaskStatus` sent an HTTP `POST` request instead of an HTTP `PUT` request expected by the backend.
 
 ### Fix
-Change `method: 'POST'` to `method: 'PUT'`:
+Changed request method to `PUT`:
 ```javascript
 export async function updateTaskStatus(id, completed) {
   const res = await fetch(`${API_URL}/api/tasks/${id}`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ completed })
   });
-  if (!res.ok) {
-    throw new Error('Failed to update task');
-  }
+  if (!res.ok) throw new Error('Failed to update task');
   return await res.json();
 }
 ```
 
 ### Files Changed
-- `frontend/src/services/api.js`
+* `frontend/src/services/api.js`
 
 ### Testing
-1. Click the checkbox on any task.
-2. Verify in the Network tab that a `PUT /api/tasks/:id` request is dispatched with status 200 OK.
+1. Checked a task checkbox.
+2. Verified in Network tab that `PUT /api/tasks/:id` succeeded with status 200 OK.
 
 ---
 
-## Bug #4: React State Overwritten When Adding New Task
+## Bug #4: React State Overwritten When Adding a Task
 
 ### Problem
-When creating a new task, all existing tasks disappear from the screen and only the newly created task is displayed.
+When adding a new task, all existing tasks disappeared from the UI and only the new task was shown.
 
 ### Root Cause
-In `frontend/src/App.jsx`, `handleAddTask` executes `setTasks([newTask])`, which replaces the entire state array with a single-element array containing only the new task, rather than appending it.
+In `frontend/src/App.jsx`, `handleAddTask` called `setTasks([newTask])`, which replaced the entire array instead of appending to previous state.
 
 ### Fix
-Append the new task to the existing task array using the functional state updater:
+Used functional state update with spread syntax:
 ```javascript
 const handleAddTask = async (title) => {
   try {
@@ -124,24 +115,24 @@ const handleAddTask = async (title) => {
 ```
 
 ### Files Changed
-- `frontend/src/App.jsx`
+* `frontend/src/App.jsx`
 
 ### Testing
-1. Add a new task using the input form.
-2. Verify that existing tasks remain in the list and the new task is appended to the bottom.
+1. Entered a new task in the input field and clicked "Add Task".
+2. Verified the new task was added to the list while keeping all existing tasks intact.
 
 ---
 
 ## Bug #5: Delete Handler Passing Array Index Instead of Task ID
 
 ### Problem
-Deleting a task deletes the wrong task or fails with `Task not found` because the array index is sent to the backend instead of the task's database `id`.
+Deleting a task deleted the wrong task or failed with "Task not found", because the array index (`0`, `1`, etc.) was passed rather than the unique `task.id`.
 
 ### Root Cause
-In `frontend/src/components/TaskItem.jsx`, the delete button triggers `onClick={() => onDelete(index)}` instead of `onClick={() => onDelete(task.id)}`.
+In `frontend/src/components/TaskItem.jsx`, the button had `onClick={() => onDelete(index)}`.
 
 ### Fix
-Pass `task.id` to `onDelete`:
+Updated button to pass `task.id`:
 ```javascript
 <button className="delete-btn" onClick={() => onDelete(task.id)}>
   Delete
@@ -149,26 +140,24 @@ Pass `task.id` to `onDelete`:
 ```
 
 ### Files Changed
-- `frontend/src/components/TaskItem.jsx`
+* `frontend/src/components/TaskItem.jsx`
 
 ### Testing
-1. Have tasks with non-zero IDs (e.g. ID `2`, `3`).
-2. Delete the second item and verify that task with ID `2` is removed from both backend and UI.
+1. Tested with multiple tasks having arbitrary IDs.
+2. Verified that deleting any specific task removes only that exact task.
 
 ---
 
-## Bug #6: Inverted Filter Logic (Completed vs. Pending)
+## Bug #6: Inverted Filter Logic
 
 ### Problem
-Clicking the "Pending" filter button displays completed tasks, and clicking "Completed" displays pending tasks.
+Selecting "Pending" showed completed tasks, and selecting "Completed" showed pending tasks.
 
 ### Root Cause
-In `frontend/src/App.jsx`, the filtering condition inverted the boolean check:
-`if (filter === 'completed') return !task.completed;`
-`if (filter === 'pending') return task.completed;`
+In `frontend/src/App.jsx`, the filter condition checked `if (filter === 'completed') return !task.completed;` and `if (filter === 'pending') return task.completed;`.
 
 ### Fix
-Correct the filter predicates:
+Corrected the filter return values:
 ```javascript
 const filteredTasks = tasks.filter((task) => {
   if (filter === 'completed') return task.completed;
@@ -178,163 +167,109 @@ const filteredTasks = tasks.filter((task) => {
 ```
 
 ### Files Changed
-- `frontend/src/App.jsx`
+* `frontend/src/App.jsx`
 
 ### Testing
-1. Create both completed and pending tasks.
-2. Click "Pending" -> Verify only uncompleted tasks are shown.
-3. Click "Completed" -> Verify only completed tasks are shown.
-4. Click "All" -> Verify all tasks are shown.
+1. Clicked "Pending" -> Verified only incomplete tasks displayed.
+2. Clicked "Completed" -> Verified only completed tasks displayed.
+3. Clicked "All" -> Verified all tasks displayed.
 
 ---
 
-## Bug #7: Task Statistics Calculation Swapped
+## Bug #7: Swapped Task Statistics Calculation
 
 ### Problem
-The statistics card shows the number of completed tasks under "Pending" and the number of pending tasks under "Completed".
+The statistics banner displayed pending count under "Completed" and completed count under "Pending".
 
 ### Root Cause
-In `frontend/src/components/TaskStats.jsx`, `completedCount` is computed with `!task.completed` and `pendingCount` is computed with `task.completed`.
+In `frontend/src/components/TaskStats.jsx`, `completedCount` was computed using `!task.completed` and `pendingCount` using `task.completed`.
 
 ### Fix
-Correct the filter condition for both counts:
+Swapped to proper boolean checks:
 ```javascript
-export default function TaskStats({ tasks }) {
-  const totalCount = tasks.length;
-  const completedCount = tasks.filter((task) => task.completed).length;
-  const pendingCount = tasks.filter((task) => !task.completed).length;
+const totalCount = tasks.length;
+const completedCount = tasks.filter((task) => task.completed).length;
+const pendingCount = tasks.filter((task) => !task.completed).length;
+```
 
-  return (
-    <div className="task-stats">
-      <div className="stat-item">
-        <span className="stat-label">Total</span>
-        <span className="stat-value">{totalCount}</span>
-      </div>
-      <div className="stat-item">
-        <span className="stat-label">Pending</span>
-        <span className="stat-value">{pendingCount}</span>
-      </div>
-      <div className="stat-item">
-        <span className="stat-label">Completed</span>
-        <span className="stat-value">{completedCount}</span>
-      </div>
-    </div>
-  );
+### Files Changed
+* `frontend/src/components/TaskStats.jsx`
+
+### Testing
+1. Verified count values against the rendered task list.
+2. Toggled a task completion status and verified real-time count updates.
+
+---
+
+## Bug #8: Backend Payload Property Mismatch
+
+### Problem
+When the frontend sent a toggle status update, the backend returned 200 OK but `task.completed` became `undefined` / `false`.
+
+### Root Cause
+In `backend/server.js`, the PUT handler checked `req.body.isCompleted` instead of `req.body.completed`.
+
+### Fix
+Updated the property check to `req.body.completed`:
+```javascript
+if (req.body.completed !== undefined) {
+  task.completed = Boolean(req.body.completed);
 }
 ```
 
 ### Files Changed
-- `frontend/src/components/TaskStats.jsx`
+* `backend/server.js`
 
 ### Testing
-1. Observe the stats counts on screen.
-2. Toggle a task from pending to completed.
-3. Verify that the Pending count decrements by 1 and the Completed count increments by 1.
+1. Sent `PUT /api/tasks/1` with `{ "completed": true }`.
+2. Verified task object in response returned `"completed": true`.
 
 ---
 
-## Bug #8: Backend Payload Property Name Mismatch on Update
+## Bug #9: Server Crash / 500 on Missing POST Body Title
 
 ### Problem
-When the frontend sends an update to mark a task as completed, the backend responds with 200 OK but the task remains uncompleted (`completed: undefined` / `false`).
+Submitting an empty JSON body `{}` or a request where `title` is missing caused an unhandled `TypeError: Cannot read properties of undefined (reading 'trim')`, crashing with a 500 error.
 
 ### Root Cause
-In `backend/routes/tasks.js`, the PUT handler expects `req.body.isCompleted`:
-`if (req.body.isCompleted !== undefined) task.completed = req.body.isCompleted;`
-However, the client sends `{ completed: true }`.
+In `backend/server.js`, `req.body.title.trim()` was executed directly without verifying that `req.body` and `req.body.title` are valid strings.
 
 ### Fix
-Update the property name check to `completed`:
+Added safe type and existence validation:
 ```javascript
-router.put('/:id', (req, res) => {
-  const taskId = parseInt(req.params.id, 10);
-  const task = tasks.find((t) => t.id === taskId);
-
-  if (!task) {
-    return res.status(404).json({ message: 'Task not found' });
-  }
-
-  if (req.body.completed !== undefined) {
-    task.completed = Boolean(req.body.completed);
-  }
-
-  res.status(200).json(task);
-});
+if (!req.body || !req.body.title || typeof req.body.title !== 'string' || !req.body.title.trim()) {
+  return res.status(400).json({ message: 'Title is required' });
+}
 ```
 
 ### Files Changed
-- `backend/routes/tasks.js`
+* `backend/server.js`
 
 ### Testing
-1. Send a `PUT` request with `{ "completed": true }` to `/api/tasks/1`.
-2. Inspect the JSON response to verify `"completed": true`.
+1. Sent POST request with `{}` and `{ "title": "   " }`.
+2. Verified server returns clean `400 Bad Request` with `{ "message": "Title is required" }`.
 
 ---
 
-## Bug #9: Server Crash / 500 on Malformed POST Request Body
+## Bug #10: Incorrect HTTP Status Code on Delete Failure
 
 ### Problem
-Sending a POST request with an empty body `{}` or a non-string `title` causes an unhandled `TypeError: Cannot read properties of undefined (reading 'trim')`, returning a 500 Internal Server Error instead of a 400 Bad Request.
+Deleting a non-existent task returned status `200 OK` with `{ success: false, message: 'Task not found' }`, which caused frontend `res.ok` to evaluate to `true` and bypass error handlers.
 
 ### Root Cause
-In `backend/routes/tasks.js`, the route directly executes `if (!req.body.title.trim())` without first validating that `req.body.title` is defined and is a valid string.
+In `backend/server.js`, the delete handler returned `res.status(200)` when `taskIndex === -1`.
 
 ### Fix
-Add safe type and existence checking before trimming:
+Changed status code to `404 Not Found`:
 ```javascript
-router.post('/', (req, res) => {
-  if (!req.body || !req.body.title || typeof req.body.title !== 'string' || !req.body.title.trim()) {
-    return res.status(400).json({ message: 'Title is required' });
-  }
-
-  const newTask = {
-    id: nextId++,
-    title: req.body.title.trim(),
-    completed: false,
-    createdAt: new Date()
-  };
-
-  tasks.push(newTask);
-  res.status(201).json(newTask);
-});
+if (taskIndex === -1) {
+  return res.status(404).json({ success: false, message: 'Task not found' });
+}
 ```
 
 ### Files Changed
-- `backend/routes/tasks.js`
+* `backend/server.js`
 
 ### Testing
-1. Send a POST request to `/api/tasks` with body `{}` or `{ "title": "   " }`.
-2. Verify the server returns status `400 Bad Request` with `{ "message": "Title is required" }` instead of crashing.
-
----
-
-## Bug #10: Incorrect HTTP Status Code (200 OK Instead of 404) on Delete Failure
-
-### Problem
-When attempting to delete a task with a non-existent ID, the backend returns HTTP status 200 OK with `{ success: false, message: 'Task not found' }`. Because `200` is considered a successful HTTP status, client-side error handling (`res.ok`) does not trigger.
-
-### Root Cause
-In `backend/routes/tasks.js`, the delete handler uses `res.status(200)` when `taskIndex === -1`.
-
-### Fix
-Return HTTP status `404 Not Found`:
-```javascript
-router.delete('/:id', (req, res) => {
-  const taskId = parseInt(req.params.id, 10);
-  const taskIndex = tasks.findIndex((t) => t.id === taskId);
-
-  if (taskIndex === -1) {
-    return res.status(404).json({ success: false, message: 'Task not found' });
-  }
-
-  const deletedTask = tasks.splice(taskIndex, 1)[0];
-  res.status(200).json({ success: true, task: deletedTask });
-});
-```
-
-### Files Changed
-- `backend/routes/tasks.js`
-
-### Testing
-1. Send a DELETE request to `/api/tasks/99999`.
-2. Verify the response status code is `404 Not Found`.
+1. Sent `DELETE /api/tasks/99999`.
+2. Verified the HTTP response status code is `404 Not Found`.

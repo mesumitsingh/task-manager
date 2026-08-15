@@ -5,7 +5,7 @@ export async function fetchTasks() {
   if (!res.ok) {
     throw new Error('Failed to fetch tasks');
   }
-  const data = res.json();
+  const data = await res.json();
   return data;
 }
 
@@ -25,7 +25,7 @@ export async function createTask(title) {
 
 export async function updateTaskStatus(id, completed) {
   const res = await fetch(`${API_URL}/api/tasks/${id}`, {
-    method: 'POST',
+    method: 'PUT',
     headers: {
       'Content-Type': 'application/json'
     },
@@ -38,7 +38,7 @@ export async function updateTaskStatus(id, completed) {
 }
 
 export async function deleteTask(id) {
-  const res = await fetch(`${API_URL}/api/task/${id}`, {
+  const res = await fetch(`${API_URL}/api/tasks/${id}`, {
     method: 'DELETE'
   });
   if (!res.ok) {

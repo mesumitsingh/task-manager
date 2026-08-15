@@ -2,8 +2,8 @@ import React from 'react';
 
 export default function TaskStats({ tasks }) {
   const totalCount = tasks.length;
-  const completedCount = tasks.filter((task) => !task.completed).length;
-  const pendingCount = tasks.filter((task) => task.completed).length;
+  const completedCount = tasks.filter((task) => task.completed).length;
+  const pendingCount = tasks.filter((task) => !task.completed).length;
 
   return (
     <div className="task-stats">
